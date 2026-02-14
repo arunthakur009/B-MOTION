@@ -1,0 +1,35 @@
+<div class="dashboard-container">
+    <h1>Brownian-Motion TRNG</h1>
+    <div id="status-bar">Status: <span id="status">Waiting for Cycle...</span></div>
+    
+    <div class="grid">
+        <canvas id="pathChart"></canvas> <canvas id="msdChart"></canvas>  </div>
+
+    <div class="key-display">
+        <h3>Master WiFi Key:</h3>
+        <code id="key-value">XXXX-XXXX-XXXX-XXXX</code>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    async function startRotationCycle() {
+        document.getElementById('status').innerText = "Capturing Entropy (Camera ON)...";
+        
+        const response = await fetch('/rotate-key');
+        const data = await response.json();
+        
+        document.getElementById('status').innerText = "Analyzing Brownian Motion...";
+        
+        // Update Path Chart (Animation logic here)
+        updateCharts(data);
+        
+        document.getElementById('key-value').innerText = data.key;
+        document.getElementById('status').innerText = "Key Rotated. Resting for 20s...";
+        
+        // Repeat every 30 seconds total (5s capture + 25s rest)
+        setTimeout(startRotationCycle, 25000);
+    }
+    
+    startRotationCycle();
+</script>
