@@ -568,10 +568,32 @@ class BrownianEngine:
         with self.lock:
             # Compute health from live stats
             health = 100
-            if self._live_shannon < 0.5: health -= 50
-            elif self._live_shannon < 0.8: health -= 20
-            if abs(self._live_autocorrelation) > 0.1: health -= 40
-            elif abs(self._live_autocorrelation) > 0.05: health -= 15
+            
+            # Check if system is under attack without DRBG protection
+            under_attack = self.attack_mode != 'NONE'
+            no_drbg_protection = not self.drbg_mode
+            
+            if under_attack and no_drbg_protection:
+                # System is compromised - severely penalize health
+                # Base critical state
+                health = 20
+                
+                # Further reduce based on motion detection
+                if self._live_avg_motion < 0.1:
+                    health = 0  # Complete system failure
+                elif self._live_avg_motion < 0.5:
+                    health = 10  # Severely degraded
+                
+                # Minimal entropy is also a sign of compromise
+                if self._live_shannon < 0.3:
+                    health = min(health, 5)
+            else:
+                # Normal health calculation
+                if self._live_shannon < 0.5: health -= 50
+                elif self._live_shannon < 0.8: health -= 20
+                if abs(self._live_autocorrelation) > 0.1: health -= 40
+                elif abs(self._live_autocorrelation) > 0.05: health -= 15
+            
             health = max(0, min(100, health))
             
             return {

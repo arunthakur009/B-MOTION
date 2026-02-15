@@ -282,18 +282,92 @@ async function toggleDRBG(btn) {
 
 async function runComparison(btn) {
     btn.innerText = "RUNNING ANALYSIS...";
+    btn.disabled = true;
+    
+    // Hide previous results if any
+    const resultsDiv = document.getElementById('nist-results');
+    resultsDiv.style.display = 'none';
+    resultsDiv.innerHTML = '';
+    
     try {
         const response = await fetch('/compare-rng');
         const results = await response.json();
         
-        let msg = "NIST ANALYSIS RESULTS:\n";
-        results.forEach(r => {
-             msg += `${r.source}: P-Value=${r.monobit_p.toFixed(3)} (${r.monobit_p > 0.01 ? 'PASS' : 'FAIL'})\n`;
+        // Build HTML table
+        let tableHTML = `
+            <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #111827; font-size: 1.1rem; font-weight: 700;">NIST Comparative Analysis Results</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e5e7eb;">
+                            <th style="text-align: left; padding: 12px 8px; color: #6b7280; font-weight: 600;">Source</th>
+                            <th style="text-align: center; padding: 12px 8px; color: #6b7280; font-weight: 600;">Monobit Test</th>
+                            <th style="text-align: center; padding: 12px 8px; color: #6b7280; font-weight: 600;">Runs Test</th>
+                            <th style="text-align: center; padding: 12px 8px; color: #6b7280; font-weight: 600;">Reboot Vuln</th>
+                            <th style="text-align: left; padding: 12px 8px; color: #6b7280; font-weight: 600;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        results.forEach((r, idx) => {
+            const monoBadge = r.monobit_p > 0.01 
+                ? `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: 600;">PASS</span>`
+                : `<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: 600;">FAIL</span>`;
+            
+            const runsBadge = r.runs_p > 0.01 
+                ? `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: 600;">PASS</span>`
+                : `<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-weight: 600;">FAIL</span>`;
+            
+            const vulnBadge = r.reboot_vulnerability === 'DETECTED'
+                ? `<span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-weight: 600;">⚠ DETECTED</span>`
+                : `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: 600;">✓ SECURE</span>`;
+            
+            const rowBg = idx % 2 === 0 ? '#f9fafb' : '#ffffff';
+            
+            tableHTML += `
+                <tr style="border-bottom: 1px solid #f3f4f6; background: ${rowBg};">
+                    <td style="padding: 12px 8px; color: #111827; font-weight: 500;">${r.source}</td>
+                    <td style="padding: 12px 8px; text-align: center;">
+                        <div>${monoBadge}</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">p=${r.monobit_p.toFixed(4)}</div>
+                    </td>
+                    <td style="padding: 12px 8px; text-align: center;">
+                        <div>${runsBadge}</div>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">p=${r.runs_p.toFixed(4)}</div>
+                    </td>
+                    <td style="padding: 12px 8px; text-align: center;">${vulnBadge}</td>
+                    <td style="padding: 12px 8px; color: #6b7280; font-size: 0.8rem;">${r.notes}</td>
+                </tr>
+            `;
         });
-        alert(msg);
+        
+        tableHTML += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 12px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px; font-size: 0.8rem; color: #1e40af;">
+                    <strong>Note:</strong> P-values > 0.01 indicate the sequence appears random (PASS). P-values ≤ 0.01 suggest non-random patterns (FAIL).
+                </div>
+            </div>
+        `;
+        
+        resultsDiv.innerHTML = tableHTML;
+        resultsDiv.style.display = 'block';
         btn.innerText = "RUN NIST COMPARATIVE ANALYSIS";
+        btn.disabled = false;
+        
+        // Scroll results into view
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
     } catch(e) {
         console.error(e);
-        btn.innerText = "ANALYSIS FAILED";
+        resultsDiv.innerHTML = `
+            <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 15px; margin-top: 20px; color: #991b1b;">
+                <strong>Analysis Failed:</strong> ${e.message || 'Unknown error occurred'}
+            </div>
+        `;
+        resultsDiv.style.display = 'block';
+        btn.innerText = "RUN NIST COMPARATIVE ANALYSIS";
+        btn.disabled = false;
     }
 }
