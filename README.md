@@ -1,9 +1,9 @@
 # Brownian-Motion TRNG
 
 **True Randomness Powered by Physical Entropy**
+---
 **PROJECT IS UNDER CONSTRUCTION**
 ---
-
 ## Overview
 
 Standard home routers rely on **Pseudo-Random Number Generators (PRNGs)**. If a hacker discovers the initial state (the "seed") or the algorithm, they can predict future encryption keys, leaving your network vulnerable to Initial Vector (IV) attacks and state compromise.
